@@ -242,7 +242,7 @@ Rest Amount on Delivery: ₹${getValue("restamount")}
 📅 Estimated Delivery: ${delivery}`;
   }
 
-  window.location.href = `https://wa.me/917983624797?text=${encodeURIComponent(msg)}`;
+  GPOrderRecords.send(msg);
 }
 
 const products = ["super mini u box md 16bit sega", "aoko game stick", "aoko game stick v1", "black hawk", "black hawk v1", "fmcb", "fmcb + usb", "fmcb + usb optional", "fmcb + usb top", "gamestick lite", "gamestick pro", "game stick gd10", "gamestick blaster", "game box g10", "g10", "g10v3", "g11 pro", "g11 pro special edition", "g11 pro ultimate edition", "gd10", "gd30", "gd35", "gs5", "k8", "m15 pro", "m22", "m33", "m44", "m55", "m66", "m77", "m88", "m99", "m222", "m333", "m444", "m555", "m666", "m777", "m888", "m999", "m1000", "nintendo switch", "nintendo switch oled", "nintendo wii", "nintendo wii u", "nintendo ds", "nintendo 3ds", "ps1", "ps2 slim", "ps3 slim", "ps3 super slim", "ps4 fat", "ps4 pro", "ps4 slim", "xbox 360", "xbox one", "xbox series s", "xbox series x", "pandora mini", "pandora pro", "sega mini u box", "sega 16bit mini u box", "sup x7m", "r35s", "r36s", "usb", "sd card"];
@@ -282,5 +282,5 @@ function updateDiscount() {
 }
 </script>
 
-<script src="https://gamesplanet13.github.io/arcade-accessories-/ps2-style-footer.js?v=20261016-ps2-view"></script></body>
+<script src="https://gamesplanet13.github.io/arcade-accessories-/ps2-style-footer.js?v=20261016-ps2-view"></script><script src="https://gamesplanet13.github.io/arcade-accessories-/orders-config.js?v=20261022-orders"></script><script src="https://gamesplanet13.github.io/arcade-accessories-/unified-postal.js?v=20261022-orders"></script><script src="https://gamesplanet13.github.io/arcade-accessories-/order-records.js?v=20261022-orders"></script></body>
 </html>
