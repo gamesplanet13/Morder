@@ -29,7 +29,7 @@
 <input type="text" id="mobile" placeholder="Mobile" required>
 <input type="text" id="altmobile" placeholder="Alt Mobile">
 <input type="email" id="email" placeholder="Email">
-<textarea id="address" placeholder="Address"></textarea><input id="house" placeholder="House number (blank = Rural)"><label for="areaType">Delivery Area</label><select id="areaType"><option value="auto">Auto</option><option value="rural">Rural</option><option value="urban">Urban (house number required)</option></select><div id="ruralNote">Rural orders: Prepaid only, Post Office ₹100 / Speed Post ₹200.</div>
+<textarea id="address" placeholder="Address"></textarea><input id="house" placeholder="House number (blank = Rural)"><label for="areaType">Delivery Area</label><select id="areaType"><option value="auto">Auto</option><option value="rural">Rural</option><option value="urban">Urban (house number required)</option></select><div id="ruralNote">Rural Prepaid: 0–499g Post Office ₹100 / Speed Post ₹200; 500g–1kg ₹150 / ₹300. Above 1kg: rate confirmation.</div>
 <input type="text" id="landmark" placeholder="Landmark">
 <input type="text" id="pincode" placeholder="Pincode">
 
@@ -53,7 +53,7 @@
 <label for="courier">Courier / Postal Service</label><select id="courier"><option value="Post Office">Post Office</option><option value="Speed Post">Speed Post</option></select><input type="text" id="discount" placeholder="Discount Applied" readonly>
 <input type="text" id="restamount" placeholder="Rest on Delivery (if COD)" readonly>
 
-<input type="number" id="baseprice" placeholder="Base Price">
+<input type="number" id="baseprice" placeholder="Base Price"><input type="number" id="packedWeightGrams" min="1" step="1" placeholder="Packed parcel weight (grams) — required for Rural">
 <input type="number" id="amountpaid" placeholder="Amount Paid">
 
 <button class="pay-btn" onclick="payNow()">Pay Now</button>
@@ -163,17 +163,24 @@ document.getElementById("pincode").addEventListener("input", function(){
 });
 
 function gpRural(){const house=document.getElementById('house').value.trim(),area=document.getElementById('areaType').value;if(!house||area==='rural')return true;if(area==='urban')return false;return /village|gaon|rural|गांव|गाँव/i.test(document.getElementById('address').value)}
+function gpPostalPrice(){
+  if(!gpRural())return 0;
+  const grams=Number(document.getElementById('packedWeightGrams').value);
+  if(!Number.isFinite(grams)||grams<=0||grams>1000)return null;
+  const base=grams>=500?150:100;
+  return document.getElementById('courier').value==='Speed Post'?base*2:base;
+}
 function gpSyncArea(){
   const rural=gpRural(),mode=document.getElementById('paymentmode'),cod=mode.querySelector('option[value="cod"]');
   cod.disabled=rural||((Number(document.getElementById("baseprice").value)||0)<1300);if(cod.disabled)mode.value='prepaid';
   const courier=document.getElementById('courier'),old=courier.value,allowed=rural?['Post Office','Speed Post']:mode.value==='cod'?['Delhivery']:['Trackon.in','ShreeMaruti.com','DTDC.in','Delhivery'];
-  courier.innerHTML=allowed.map(n=>'<option value="'+n+'">'+n+(rural?' — ₹'+(n==='Speed Post'?200:100):'')+'</option>').join('');
+  courier.innerHTML=allowed.map(n=>'<option value="'+n+'">'+n+(rural?' — by weight':'')+'</option>').join('');
   if(allowed.includes(old))courier.value=old;
-  document.getElementById('ruralNote').textContent=rural?'Rural: full Prepaid required; only Post Office ₹100 or Speed Post ₹200. COD unavailable.':'Urban: standard carriers; COD only via Delhivery.';
+  document.getElementById('ruralNote').textContent=rural?'Rural prepaid only: 0–499g Post Office ₹100 / Speed Post ₹200; 500g–1kg ₹150 / ₹300. Above 1kg: confirmed rate required.':'Urban: standard carriers; COD only via Delhivery.';
   updateDiscount();
 }
 function payNow() {
-  gpSyncArea();if(gpRural()&&document.getElementById('paymentmode').value==='cod'){alert('Rural COD unavailable');return;}
+  gpSyncArea();if(gpRural()&&(document.getElementById('paymentmode').value==='cod'||gpPostalPrice()===null)){alert('Rural: enter packed weight up to 1kg; above 1kg confirm postal rate before payment.');return;}
   const amount = document.getElementById("amountpaid").value;
   if (amount) {
     window.open(`upi://pay?pa=gamesplanet@upi&pn=GamesPlanet&am=${amount}`, "_blank");
@@ -183,7 +190,7 @@ function payNow() {
 }
 
 function sendOrder(){
-  gpSyncArea();if(gpRural()&&document.getElementById("paymentmode").value!=="prepaid"){alert("Rural COD unavailable.");return;}
+  gpSyncArea();if(gpRural()&&(document.getElementById("paymentmode").value!=="prepaid"||gpPostalPrice()===null)){alert("Rural prepaid only. Enter packed weight up to 1kg; above 1kg confirm postal rate before submission.");return;}
   if(document.getElementById("paymentmode").value==="cod"&&(Number(document.getElementById("baseprice").value)||0)<1300){alert("COD minimum product amount ₹1,300.");return;}
   let now = new Date();
   let orderId = String(now.getDate()).padStart(2,'0') + String(now.getMonth()+1).padStart(2,'0') + now.getFullYear() +
@@ -220,7 +227,7 @@ District/City: ${getValue("city")}
 Post office: ${getValue("postoffice")}
 Delivery Area: ${gpRural()?"Rural":"Urban"}
 Courier Company: ${getValue("courier")}
-Courier Charges: ₹${gpRural()?(getValue("courier")==="Speed Post"?200:100):0}
+Courier Charges: ₹${gpPostalPrice()??0}
 
 Product: ${getValue("product")}
 Variant: ${getValue("variant")}
@@ -247,7 +254,7 @@ District/City: ${getValue("city")}
 Post office: ${getValue("postoffice")}
 Delivery Area: ${gpRural()?"Rural":"Urban"}
 Courier Company: ${getValue("courier")}
-Courier Charges: ₹${gpRural()?(getValue("courier")==="Speed Post"?200:100):0}
+Courier Charges: ₹${gpPostalPrice()??0}
 
 Product: ${getValue("product")}
 Variant: ${getValue("variant")}
@@ -273,6 +280,7 @@ document.getElementById("baseprice").addEventListener("input", gpSyncArea);
 document.getElementById("paymentmode").addEventListener("change", gpSyncArea);
 ["house","areaType","address"].forEach(id=>document.getElementById(id).addEventListener(id==="areaType"?"change":"input",gpSyncArea));
 document.getElementById("courier").addEventListener("change",updateDiscount);
+document.getElementById("packedWeightGrams").addEventListener("input",updateDiscount);
 
 function updateDiscount() {
   const coupon = document.getElementById("coupon").value.trim().toLowerCase();
@@ -294,14 +302,20 @@ function updateDiscount() {
   }
 
   const codCharge = (mode === "cod" && base < 1500) ? 99 : 0;
-  const postalCharge=mode==="prepaid"&&gpRural()?(document.getElementById("courier").value==="Speed Post"?200:100):0;
-  const amountPaid = mode === "cod" ? Math.max(500, Math.ceil(base * 0.1)) : base - discount + codCharge + postalCharge;
+  const postalCharge=mode==="prepaid"&&gpRural()?gpPostalPrice():0;
+  const amountPaid = mode === "cod" ? Math.max(500, Math.ceil(base * 0.1)) : base - discount + codCharge + (postalCharge??0);
   const rest = mode === "cod" ? base + codCharge - amountPaid : 0;
 
   document.getElementById("discount").value = (mode === "prepaid") ? discount : 0;
   document.getElementById("amountpaid").value = amountPaid;
   document.getElementById("restamount").value = rest;
-  document.getElementById("ruralNote").dataset.postalCharge=String(postalCharge);
+  document.getElementById("ruralNote").dataset.postalCharge=String(postalCharge??'Quote required');
+  if(gpRural()&&postalCharge===null){
+    document.getElementById("ruralNote").textContent='Enter packed weight in grams (1–1000). Over 1kg postal rate confirmation is required.';
+    document.getElementById("amountpaid").value='';
+  }else if(gpRural()){
+    document.getElementById("ruralNote").textContent='Packed weight '+document.getElementById('packedWeightGrams').value+'g: '+document.getElementById('courier').value+' ₹'+postalCharge+'.';
+  }
 }
 gpSyncArea();
 </script>
