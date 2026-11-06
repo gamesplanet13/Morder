@@ -131,8 +131,10 @@ document.getElementById("pincode").addEventListener("input", function(){
             let opt = document.createElement("option");
             opt.value = p.Name;
             opt.text = p.Name;
+            opt.dataset.branchType=String(p.BranchType||p.OfficeType||"");
             sel.appendChild(opt);
           });
+          gpSyncArea();
 
           if (pincodeLatLng[pincode]) {
             const rampurLat = 28.8, rampurLng = 79.0;
@@ -162,7 +164,16 @@ document.getElementById("pincode").addEventListener("input", function(){
   }
 });
 
-function gpRural(){const house=document.getElementById('house').value.trim(),area=document.getElementById('areaType').value;if(!house||area==='rural')return true;if(area==='urban')return false;return /village|gaon|rural|गांव|गाँव/i.test(document.getElementById('address').value)}
+function gpRural(){
+  const selected=document.getElementById('postoffice')?.selectedOptions?.[0];
+  const type=String(selected?.dataset?.branchType||'').toLowerCase();
+  const name=String(selected?.value||'');
+  if(type.includes('branch')||/^bo$/i.test(type.trim())||/\bB\.?\s*O\.?(?:$|\s)/i.test(name))return true;
+  const house=document.getElementById('house').value.trim(),area=document.getElementById('areaType').value;
+  if(!house||area==='rural')return true;
+  if(area==='urban')return false;
+  return /village|gaon|rural|गांव|गाँव/i.test(document.getElementById('address').value);
+}
 function gpPostalPrice(){
   if(!gpRural())return 0;
   const grams=Number(document.getElementById('packedWeightGrams').value);
@@ -281,6 +292,7 @@ document.getElementById("paymentmode").addEventListener("change", gpSyncArea);
 ["house","areaType","address"].forEach(id=>document.getElementById(id).addEventListener(id==="areaType"?"change":"input",gpSyncArea));
 document.getElementById("courier").addEventListener("change",updateDiscount);
 document.getElementById("packedWeightGrams").addEventListener("input",updateDiscount);
+document.getElementById("postoffice").addEventListener("change",gpSyncArea);
 
 function updateDiscount() {
   const coupon = document.getElementById("coupon").value.trim().toLowerCase();
