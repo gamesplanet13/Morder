@@ -165,7 +165,7 @@ document.getElementById("pincode").addEventListener("input", function(){
 function gpRural(){const house=document.getElementById('house').value.trim(),area=document.getElementById('areaType').value;if(!house||area==='rural')return true;if(area==='urban')return false;return /village|gaon|rural|गांव|गाँव/i.test(document.getElementById('address').value)}
 function gpSyncArea(){
   const rural=gpRural(),mode=document.getElementById('paymentmode'),cod=mode.querySelector('option[value="cod"]');
-  cod.disabled=rural;if(rural)mode.value='prepaid';
+  cod.disabled=rural||((Number(document.getElementById("baseprice").value)||0)<1300);if(cod.disabled)mode.value='prepaid';
   const courier=document.getElementById('courier'),old=courier.value,allowed=rural?['Post Office','Speed Post']:mode.value==='cod'?['Delhivery']:['Trackon.in','ShreeMaruti.com','DTDC.in','Delhivery'];
   courier.innerHTML=allowed.map(n=>'<option value="'+n+'">'+n+(rural?' — ₹'+(n==='Speed Post'?200:100):'')+'</option>').join('');
   if(allowed.includes(old))courier.value=old;
@@ -184,6 +184,7 @@ function payNow() {
 
 function sendOrder(){
   gpSyncArea();if(gpRural()&&document.getElementById("paymentmode").value!=="prepaid"){alert("Rural COD unavailable.");return;}
+  if(document.getElementById("paymentmode").value==="cod"&&(Number(document.getElementById("baseprice").value)||0)<1300){alert("COD minimum product amount ₹1,300.");return;}
   let now = new Date();
   let orderId = String(now.getDate()).padStart(2,'0') + String(now.getMonth()+1).padStart(2,'0') + now.getFullYear() +
                 String(now.getHours()).padStart(2,'0') + String(now.getMinutes()).padStart(2,'0') + String(now.getSeconds()).padStart(2,'0') + '00';
@@ -268,7 +269,7 @@ const products = ["super mini u box md 16bit sega", "aoko game stick", "aoko gam
 document.getElementById("coupon").addEventListener("input", updateDiscount);
 document.getElementById("variant").addEventListener("input", updateDiscount);
 document.getElementById("product").addEventListener("input", updateDiscount);
-document.getElementById("baseprice").addEventListener("input", updateDiscount);
+document.getElementById("baseprice").addEventListener("input", gpSyncArea);
 document.getElementById("paymentmode").addEventListener("change", gpSyncArea);
 ["house","areaType","address"].forEach(id=>document.getElementById(id).addEventListener(id==="areaType"?"change":"input",gpSyncArea));
 document.getElementById("courier").addEventListener("change",updateDiscount);
